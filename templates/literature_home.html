@@ -1,0 +1,265 @@
+<!-- File: templates/literature_home.html -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Literature App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f9f9f9;
+      color: #222;
+    }
+    .App {
+      max-width: 800px;
+      margin: auto;
+      padding: 1rem;
+    }
+    .header {
+      background: #1e3a5f;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .title {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .news {
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    .menu {
+      margin-top: 0.5rem;
+      background: #305080;
+      padding: 0.5rem;
+      color: white;
+    }
+    .body {
+      padding: 1rem;
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: white;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      background: #1e3a5f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+    .btn:hover {
+      background: #305080;
+    }
+  </style>
+</head>
+<body>
+  <div class="App">
+    <header class="header">
+      <div class="title">Title Banner</div>
+      <div class="news">News Slider</div>
+      <nav class="menu">Menu Bar</nav>
+    </header>
+    <main class="body" id="mainContent">
+      <h2>Literature</h2>
+
+      <section>
+        <h3>Poems</h3>
+        <div id="poem"></div>
+        <button class="btn" id="addPoem" style="display:none;">Add Poem</button>
+      </section>
+
+      <section>
+        <h3>Stories</h3>
+        <div id="story"></div>
+        <button class="btn" id="addStory" style="display:none;">Add Story</button>
+      </section>
+
+      <section>
+        <h3>Gajals</h3>
+        <div id="gajal"></div>
+        <button class="btn" id="addGajal" style="display:none;">Add Gajal</button>
+      </section>
+
+      <section id="userProfileSection" style="display:none;">
+        <h3>User Profile</h3>
+        <div class="card" id="userProfileCard"></div>
+      </section>
+
+      <div class="auth">
+        <button class="btn" id="loginBtn">Login</button>
+        <button class="btn" id="logoutBtn" style="display:none;">Logout</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+
+    function renderDetail(detail) {
+      const html = `
+        <h2>${detail.title}</h2>
+        <p><strong>Contributors:</strong> ${detail.contributors || 'N/A'}</p>
+        <p><strong>Content:</strong><br/>${(detail.content || '').replace(/\r?\n/g, '<br/>')}</p>
+        <p><strong>Created By:</strong> ${detail.created_by?.display_name || ''}</p>
+        <p><strong>Created At:</strong> ${new Date(detail.created_at).toLocaleString()}</p>
+        <p><strong>Last Modified:</strong> ${detail.last_modified}</p>
+        <p><strong>Publish Status:</strong> ${detail.publish_status}</p>
+        <p><strong>Chhanda:</strong> ${detail.chhanda || 'N/A'}</p>
+        <button class="btn" onclick="location.reload()">Back</button>
+      `;
+      document.getElementById('mainContent').innerHTML = html;
+    }
+
+    function fetchData(type) {
+      fetch(`/api/literature/${type}/`)
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById(type);
+          container.innerHTML = '';
+          data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `<strong>${item.title}</strong><br/><small>${item.created_by?.display_name || ''}</small>`;
+            div.addEventListener('click', () => {
+              fetch(`/api/literature/${type}/${item.id}/`)
+                .then(res => res.json())
+                .then(detail => renderDetail(detail));
+            });
+            container.appendChild(div);
+          });
+        });
+    }
+
+    function fetchUserProfile() {
+      fetch('/api/userprofile/detail/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(res => res.json())
+      .then(profile => {
+        const div = document.getElementById('userProfileCard');
+        div.innerHTML = `<strong>${profile.full_name || ''}</strong><br/><small>${profile.user?.email || ''}</small>`;
+        document.getElementById('userProfileSection').style.display = 'block';
+      });
+    }
+
+    function showAuthButtons() {
+      if (token) {
+        document.getElementById('loginBtn').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'inline-block';
+        ['addPoem', 'addStory', 'addGajal'].forEach(id => {
+          document.getElementById(id).style.display = 'inline-block';
+        });
+        document.getElementById('addPoem').addEventListener('click', () => renderCreateForm('poem'));
+        document.getElementById('addStory').addEventListener('click', () => renderCreateForm('story'));
+        document.getElementById('addGajal').addEventListener('click', () => renderCreateForm('gajal'));
+        fetchUserProfile();
+      }
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+  const username = prompt('Username:');
+  const password = prompt('Password:');
+  fetch('/api/token/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ username, password })
+  })
+    .then(res => {
+      if (!res.ok) throw new Error('Invalid credentials');
+      return res.json();
+    })
+    .then(data => {
+      localStorage.setItem('token', data.access);
+      location.reload();
+    })
+    .catch(() => alert('Login failed. Please check credentials.'));
+});
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      location.reload();
+    });
+
+    fetchData('poem');
+    fetchData('story');
+    fetchData('gajal');
+    showAuthButtons();
+  function renderCreateForm(type) {
+  let chhandaSelect = '';
+  if (type === 'poem') {
+    fetch('/api/literature/chhanda/')
+      .then(res => res.json())
+      .then(chhandas => {
+        chhandaSelect = `<label>Chhanda:</label><br/><select name="chhanda"><option value="">-- None --</option>` +
+          chhandas.map(c => `<option value="${c.id}">${c.name}</option>`).join('') +
+          `</select><br/>`;
+        showForm(chhandaSelect);
+      });
+  } else {
+    showForm('');
+  }
+
+  function showForm(extraField) {
+    const form = `
+    console.log('Using token:', token);
+      <h2>Add ${type.charAt(0).toUpperCase() + type.slice(1)}</h2>
+      <form id="createForm">
+        <label>Title:</label><br/><input name="title" required /><br/>
+        <label>Contributors:</label><br/><input name="contributors" required /><br/>
+        <label>Content:</label><br/><textarea name="content" required></textarea><br/>
+        <label>Publish Status:</label><br/>
+        <select name="publish_status">
+          <option value="AR">Archieved</option>
+          <option value="DR">Draft</option>
+          <option value="PB">Published</option>
+        </select><br/>
+        ${extraField}
+        <button class="btn" type="submit">Submit</button>
+        <button class="btn" type="button" onclick="location.reload()">Cancel</button>
+      </form>
+    `;
+    document.getElementById('mainContent').innerHTML = form;
+
+    document.getElementById('createForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      fetch(`/api/literature/${type}/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to submit');
+        return res.json();
+      })
+      .then(() => location.reload())
+      .catch(() => alert('Submission failed'));
+    });
+  }
+}
+</script>
+</body>
+</html>
