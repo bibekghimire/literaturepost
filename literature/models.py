@@ -17,7 +17,6 @@ class CleanValidatedModel(models.Model):
     class Meta:
         abstract = True  # Don't create a DB table for this
         ordering=['last_modified','created_at']
-
     def save(self, *args, **kwargs):
         # Only call full_clean if validation hasn’t run yet
         if not self._validated:
@@ -46,6 +45,7 @@ class Chhanda(CleanValidatedModel):
         validators=[MinValueValidator(5,message="If it contains value less than 5 please contact Admin")]
     )
     details=models.TextField() #redundant to content
+    publish_status=models.CharField(max_length=2,verbose_name="publish Status",choices=Status.choices, default=Status.DRAFT)
     class Meta:
         ordering=['title']
         permissions=[
@@ -56,7 +56,6 @@ class Chhanda(CleanValidatedModel):
     
     def __str__(self):
         return self.title +' : ' + str(self.character_count)
-
 
 class Poem(Literature):
 
@@ -75,7 +74,7 @@ class Poem(Literature):
             ('can_add_poem', 'Can Add Poem'),
             ('can_archieve_poem','Can Archieve Poem'),
         ]
-    
+
 class Gajal(Literature):
     def __str__(self):
         return f'{self.title}: {self.author}'

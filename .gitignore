@@ -22,6 +22,8 @@ ENV/
 media/
 staticfiles/
 static/
+user_*/
+
 
 # VS Code and other IDEs
 .vscode/
@@ -54,3 +56,5 @@ coverage.xml
 *.egg-info/
 .eggs/
 *.docx
+miscs.*
+test_scripts/

@@ -18,7 +18,12 @@ def user_directory_path(instance, filename):
 #     if not value or not value.strip():
 #         raise ValidationError('Empy or none value', code='blank')   
 #     return value
-
+'''
+The role is defined here in UserProfile, accessing role associated to UserProfile
+that has foriegn key to Django.contrib.auth.models.User is a bit lengthy
+user.profile.role, so we defined a method that returns
+user.userprofile.role
+'''
 def get_user_role(self):
     if hasattr(self,'userprofile'):
         return self.userprofile.role
@@ -26,6 +31,12 @@ def get_user_role(self):
 User.add_to_class('role',property(get_user_role))
 
 class UserExtension(models.Model):
+    '''
+    This UserExtension model with two fields:
+    1. user: OneToOneField to django.contrib.auth.models.User the user created
+    2. created_by: ForeignKey to django.contrib.auth.models user who created 
+    the user 'user'
+    '''
     user=models.OneToOneField(User, on_delete=models.CASCADE, related_name='extension')
     created_by=models.ForeignKey(User,null=True, on_delete=models.SET_NULL, related_name='created_users')
 
@@ -39,28 +50,17 @@ class CleanValidatedModel(models.Model):
     """
     _validated = False  # Internal flag for validated instances
     created_at=models.DateTimeField("Created At",auto_now_add=True)
+    created_by=models.ForeignKey(User,related_name='created_profiles',on_delete=models.PROTECT, editable=False, null=True)
+    last_modified=models.DateTimeField("Last Modified",auto_now=True)
+    modified_by=models.ForeignKey(User,related_name='modified_profiles',on_delete=models.PROTECT,null=True)
     class Meta:
         abstract = True  # Don't create a DB table for this
-        permissions=[
-            ("can_add_user", "Can add user"),
-            ("can_edit_user", "Can edit user"),
-            ("can_reset_password", "Can reset password"),
-            ("can_delete_user", "Can delete user"),
-            ("can_change_user_status", "Can change user status"),
-            ("can_assign_admin_role", "Can assign admin role"),
-            ("can_assign_staff_role", "Can assign staff role"),
-            ("can_assign_creator_role", "Can assign creator role"),
-            ("can_add_userprofile", "Can add user profile"),
-            ("can_edit_user_profile", "Can edit user profile"),
-            ("can_delete_user_profile", "Can delete user profile"),
-
-        ]
 
     def save(self, *args, **kwargs):
         # Only call full_clean if validation hasn’t run yet
         if not self._validated:
-            print("validating invalidated data")
             self.full_clean()
+            self._validated=False
         super().save(*args, **kwargs)
 
 class UserProfile(CleanValidatedModel):
@@ -80,8 +80,7 @@ class UserProfile(CleanValidatedModel):
     9. created: autofield and assigned when the object is created
     10. profile_picture: Display picture, valid image file only 400x400.
     '''
-    class Meta:
-        permissions = CleanValidatedModel._meta.permissions 
+
     first_name=models.CharField(
         "First Name", max_length=32,
         validators=[validators.no_whitespace,validators.name_validator]
@@ -112,6 +111,7 @@ class UserProfile(CleanValidatedModel):
         "Profile Picture", blank=True,
         upload_to=user_directory_path,
         validators=[validators.profile_picture_validator],
+        null=True,
     )
     
     role=models.CharField(
@@ -127,12 +127,11 @@ class UserProfile(CleanValidatedModel):
         choices=choices.StatusChoices.choices,
     )
     
-    public_id=models.UUIDField("Public ID", default=uuid.uuid4, editable=False,unique=True)
-
+    public_id=models.UUIDField("Public ID", default=uuid.uuid4, editable=False,unique=True,)
     def __str__(self):
         return f'{self.first_name} {self.last_name}: {self.role}, {self.id}: {self.user.username}'
-    
-    def get_full_name(self):
+    @property
+    def full_name(self):
         return f'{self.first_name} {self.last_name}'
     
     def save(self, *args, **kwargs):
@@ -144,37 +143,7 @@ class UserProfile(CleanValidatedModel):
         except UserProfile.DoesNotExist:
             pass
         if not self.display_name.strip():
-            self.display_name=self.get_full_name()
+            self.display_name=self.full_name
         super().save(*args,**kwargs)
-
-    # def clean(self):
-        # '''
-        # Checks for validations of the fields:
-        # collects each field errors as a dictionary
-        # key: field name
-        # value: list of collected errors
-        # '''
-        # errors={}
-        # super().clean()
-        # field_validators=[
-        #     ('date_of_birth',self.date_of_birth,[validators.age_validator]),
-        #     ('display_name',self.display_name,[validators.name_validator,]),
-        #     ('first_name',self.first_name,[validators.name_validator,]),
-        #     ('last_name',self.last_name, [validators.name_validator]),
-        #     ('phone_number',self.phone_number,[validators.phone_number_validator,unique_validator]),
-        #     ('email',self.email,[unique_validator]),
-        #     ('profile_picture',self.profile_picture,[validators.image_validator]),
-        # ]
-        # for field_name, value, validator_list in field_validators:
-        #     field_errors=[]
-        #     for validator_func in validator_list:
-        #         validator_func(self,field_name,value=value,errors=field_errors)
-        #     if field_errors:
-        #         errors[field_name]=field_errors
-        # if errors:
-        #     # print(errors)
-        #     raise ValidationError(errors)
-
-
 
     

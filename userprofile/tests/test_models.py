@@ -15,7 +15,7 @@ error_codes=[
     'max_length','invalid','blank','pattern',
     'ReservedWord','invalid_choice','UnderAge',
     'LargeFile', 'suspicious', 'invalid', 'unknown',
-    'InvalidFormat'
+    'InvalidFormat','alpha',
 ]
 def get_dummy_image(name="test.jpg", size=(100, 100), color=(255, 0, 0)):
     image = Image.new("RGB", size, color)
@@ -100,3 +100,5 @@ class TestUserProfile(TestCase):
         data["user"]=self.user
         profile=UserProfile.objects.create(**data)
         self.assertTrue(profile.profile_picture.name.endswith(".jpg"))
+
+    

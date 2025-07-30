@@ -4,7 +4,19 @@
 
     </head>
     <body>
-        <a class="link" href="{% url 'userprofile:public-profile' %}">users</a>
-        <a href="{% url 'literature:literature-list-create' 'poem' %}">Poem</a>
+        <ul>
+
+        
+           <li><a class="link" href="{% url 'userprofile:profile-list' %}">User Profiles</a></li>
+            <li><a href="{% url 'userprofile:create-profile' %}">AddProfile</a></li>
+            <li><a href="{% url 'userprofile:create-user'%}">Add User</a></li>
+            <li><a href="{% url 'userprofile:user-list'%}">List Users</a></li>
+            <li><a href="{% url 'literature:literature-list-create' 'poem' %}">Poem</a></li>
+            <li><a href="{% url 'literature:literature-list-create' 'chhanda' %}">Chhanda</a></li>
+            <li><a href="{% url 'literature:literature-list-create' 'gajal' %}">गजल</a></li>
+            <li><a href="{% url 'literature:literature-list-create' 'story' %}">कथा</a></li>
+            <li><a href="{% url 'literature:admin-all-literature' 'poem' %}">Admin All Poem</a></li>
+
+        </ul>
     </body>
 </html>

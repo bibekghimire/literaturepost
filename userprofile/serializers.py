@@ -6,7 +6,12 @@ from . import choices
 from rest_framework.reverse import reverse
 
 
-
+#################
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=User
+        fields=['username']
+        read_only_fields=['username'] 
 ## Helper Functions
 def check_role_assignment(assigner_role,assigned_role):
     if assigner_role == 'AD':
@@ -16,7 +21,6 @@ def check_role_assignment(assigner_role,assigned_role):
     else:
         return False
 
-
 class BaseModelSerializer(serializers.ModelSerializer):
     '''
     this serializer provides create and update method
@@ -25,6 +29,50 @@ class BaseModelSerializer(serializers.ModelSerializer):
     It s common for all serializers that are to be written in 
     serializers.ModelSerializer
     '''
+    url=serializers.SerializerMethodField()
+    created_by=UserSerializer()
+    list_fields=[]
+    create_fields=[]
+    detail_fields=[]
+    public_detail_fields=[]
+    update_fields=[]
+    super_update_fields=[]
+    user=UserSerializer(read_only=True)
+    assign_user=serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=User.objects.filter(userprofile__isnull=True)
+    )
+
+    def keep_fields(self,fields):
+        '''
+        removes the fields that are not in fields
+        from self.fields
+        '''
+        self_fields=list(self.fields)
+        for field in self_fields:
+            if field not in fields:
+                self.fields.pop(field)
+        
+    def __init__(self,*args,**kwargs):
+        _action=kwargs.pop('action', None)
+        super().__init__(*args,**kwargs)
+        if self.context.get('view'):
+            _action=self.context.get('view').action
+
+        if _action=='list':
+            self.keep_fields(self.list_fields)
+        elif _action=='create':
+            self.keep_fields(self.create_fields)
+        elif _action=='retrieve':
+            self.keep_fields(self.detail_fields)
+        elif _action=='public-retrieve':
+            self.keep_fields(self.public_detail_fields)
+        elif _action=='update':
+            self.keep_fields(self.update_fields)
+        elif _action=='super-update':
+            self.keep_fields(self.super_update_fields)
+        else:
+            raise serializers.ValidationError("Must provide an Action")
+        
     def validate(self,attrs):
         if 'role' in attrs:
             user=self.context['request'].user
@@ -35,130 +83,207 @@ class BaseModelSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self,validated_data):
+        validated_data['created_by']=self.context['request'].user
+        validated_data['user']=validated_data.pop('assign_user')
         instance=self.Meta.model(**validated_data)
         instance._validated=True
         instance.save()
         return instance
     
     def update(self,instance,validated_data):
+        assign_user=getattr(validated_data,'assign_user')
+        if assign_user:
+            validated_data['user']=assign_user
+        validated_data['modified_by']=self.context['request'].user
         for attr,value in validated_data.items():
             setattr(instance,attr,value)
         instance._validated=True
         instance.save()
         return instance
 
-class ListProfileSerializer(serializers.ModelSerializer):
-    '''for listing userprofiles only with some fields to display'''
-    userprofile_url=serializers.SerializerMethodField()
+    def get_url(self,obj):
+        request=self.context.get('request')
+        if request:
+            return reverse(
+                'userprofile:profile-detail',
+                kwargs={
+                    'uuid':obj.public_id
+                },
+                request=request,
+            )
+
+class UserProfileSerializer(BaseModelSerializer):
     class Meta:
         model=UserProfile
-        fields=['display_name','email','userprofile_url']
+        fields='__all__'
+    list_fields=['display_name','profile_picture','url']
+    detail_fields=[
+        'first_name','last_name','display_name','email',
+        'phone_number','date_of_birth','user','profile_picture','role',
+        'status','public_id','created_by'
+                ]
+    public_detail_fields=['first_name','last_name','display_name','profile_picture','public_id','email']
+    update_fields=['first_name','last_name','display_name','email','date_of_birth',
+                   'profile_picture',]
+    create_fields=[
+        'first_name','last_name','display_name','email',
+        'phone_number','date_of_birth','assign_user','profile_picture','role',
+        'status',
+                ]
+    super_update_fields=create_fields
 
-    def create(self,validated_data):
-        raise serializers.ValidationError("This Serializer is ReadOnly")
-    def update(self,validated_data):
-        raise serializers.ValidationError("This serializer is ReadOnly")
+# class SelfUserProfileSerializer(BaseModelSerializer):
+#     class Meta:
+#         model=UserProfile
+#         fields='__all__'
+#     detail_fields=[
+#         'first_name','last_name','display_name','email',
+#         'phone_number','date_of_birth','user','profile_picture','role',
+#         'status','public_id','created_by'
+#                 ]
+#     update_fields=['first_name','last_name','display_name','email','date_of_birth',
+#                    'profile_picture',]
+
+# class SuperUserProfileSerialzier(BaseModelSerializer):
+#     class Meta:
+#         model=UserProfile
+#         fields='__all__'
+#     detail_fields=[
+#         'first_name','last_name','display_name','email',
+#         'phone_number','date_of_birth','user','profile_picture','role',
+#         'status','public_id',
+#                 ]
+#     create_fields=[
+#         'first_name','last_name','display_name','email',
+#         'phone_number','date_of_birth','user','profile_picture','role',
+#         'status',
+#                 ]
+#     update_fields=create_fields
+
+# class PublicUserProfileSerializer(BaseModelSerializer):
+#     class Meta:
+#         model=UserProfile
+#         fields='__all__'
+#     list_fields=['display_name','profile_picture','url']
+#     detail_fields=['first_name','last_name','display_name','profile_picture','public_id','email']
+#     def create(self,validated_data):
+#         raise serializers.ValidationError("This Serializer is ReadOnly")
+#     def update(self,validated_data):
+#         raise serializers.ValidationError("This serializer is ReadOnly")   
+
+# class ListProfileSerializer(serializers.ModelSerializer):
+#     '''for listing userprofiles only with some fields to display'''
+#     userprofile_url=serializers.SerializerMethodField()
+#     class Meta:
+#         model=UserProfile
+#         fields=['display_name','email','userprofile_url']
+
+#     def create(self,validated_data):
+#         raise serializers.ValidationError("This Serializer is ReadOnly")
+#     def update(self,instance,validated_data):
+#         raise serializers.ValidationError("This serializer is ReadOnly")
     
-    def get_userprofile_url(self,obj):
-            request=self.context.get('request',None)
-            if request:
-                return reverse('userprofile:userprofile-detail',kwargs={'uuid':obj.public_id}, request=request)
+#     def get_userprofile_url(self,obj):
+#             request=self.context.get('request',None)
+#             if request:
+#                 return reverse('userprofile:userprofile-detail',kwargs={'uuid':obj.public_id}, request=request)
 
-class PublicDetailSerializer(ListProfileSerializer):
+# class PublicDetailSerializer(BaseModelSerializer):
     
-    class Meta:
-        model=ListProfileSerializer.Meta.model
-        fields=ListProfileSerializer.Meta.fields+['first_name','last_name','profile_picture',]
+#     class Meta:
+#         model=ListProfileSerializer.Meta.model
+#         fields=ListProfileSerializer.Meta.fields+['first_name','last_name','profile_picture',]
 
-    def create(self,validated_data):
-        raise serializers.ValidationError("This Serializer is ReadOnly")
-    def update(self,validated_data):
-        raise serializers.ValidationError("This serializer is ReadOnly")   
+#     def create(self,validated_data):
+#         raise serializers.ValidationError("This Serializer is ReadOnly")
+#     def update(self,validated_data):
+#         raise serializers.ValidationError("This serializer is ReadOnly")   
 
+# class PublicProfileSerializer(BaseModelSerializer):
+#     '''for listing purpose only
+#     serializes ['first_name','last_name', 'display_name', 'email','public_id']
+#     and all are read only for public access.
+#     '''
+#     class Meta:
+#         model=UserProfile
+#         fields=['first_name','last_name', 'display_name', 'email','public_id','role']
+#         read_only_fields=fields
 
-class PublicProfileSerializer(BaseModelSerializer):
-    '''for listing purpose only
-    serializes ['first_name','last_name', 'display_name', 'email','public_id']
-    and all are read only for public access.
-    '''
-    class Meta:
-        model=UserProfile
-        fields=['first_name','last_name', 'display_name', 'email','public_id','role']
-        read_only_fields=fields
-
-class UserProfileDetailUpdateSerializer(BaseModelSerializer):
-    '''
-    for self detail view and update purpose only 
-    'first_name','last_name', 'display_name', 'email','public_id',
-            'phone_number','date_of_birth', 'username', 'profile_picture','role',
-            'status',
-    where read_only fields are: 
-    'public_id','phone_number', 'username','role','status'
-    They cannot be updated by self account. 
-    '''
-    username=serializers.CharField(source='user.username')
-    class Meta:
-        model=UserProfile
+# class UserProfileDetailUpdateSerializer(BaseModelSerializer):
+#     '''
+#     for self detail view and update purpose only 
+#     'first_name','last_name', 'display_name', 'email','public_id',
+#             'phone_number','date_of_birth', 'username', 'profile_picture','role',
+#             'status',
+#     where read_only fields are: 
+#     'public_id','phone_number', 'username','role','status'
+#     They cannot be updated by self account. 
+#     '''
+#     username=serializers.CharField(source='user.username')
+#     class Meta:
+#         model=UserProfile
         
-        fields=[
-            'first_name','last_name', 'display_name', 'email','public_id',
-            'phone_number','date_of_birth', 'username', 'profile_picture','role',
-            'status',
-        ]
-        read_only_fields=['public_id','phone_number', 'username','role','status']
+#         fields=[
+#             'first_name','last_name', 'display_name', 'email','public_id',
+#             'phone_number','date_of_birth', 'username', 'profile_picture','role',
+#             'status',
+#         ]
+#         read_only_fields=['public_id','phone_number', 'username','role','status']
     
-class SuperUpdateProfileSerializer(BaseModelSerializer):
-    '''
-        for updating User Profiles of lowe level users
-        hierarchy who can manage whom:
-        Admin>Staff>Creator.
-    '''
-    username=serializers.CharField(source='user.username',read_only=True)
-    class Meta:
-        model=UserProfile
-        fields=[
-            'first_name','last_name', 'display_name', 'email','public_id',
-            'phone_number','date_of_birth', 'username', 'profile_picture','role',
-            'status',
-        ]
-        read_only_fields=['public_id', 'username',]
+# class SuperUpdateProfileSerializer(BaseModelSerializer):
+#     '''
+#         for updating User Profiles of lowe level users
+#         hierarchy who can manage whom:
+#         Admin>Staff>Creator.
+#     '''
+#     username=serializers.CharField(source='user.username',read_only=True)
+#     class Meta:
+#         model=UserProfile
+#         fields=[
+#             'first_name','last_name', 'display_name', 'email','public_id',
+#             'phone_number','date_of_birth', 'username', 'profile_picture','role',
+#             'status',
+#         ]
+#         read_only_fields=['public_id', 'username',]
      
-class CreateProfileSerializer(BaseModelSerializer):
-    '''To create a User Profile, Only Stadd User and Admin User can create 
-    '''
-    role=serializers.ChoiceField(choices=[])
-    status=serializers.ChoiceField(choices=choices.StatusChoices)
-    user= serializers.SlugRelatedField(slug_field='username', queryset=User.objects.none())
-    #make sure to use another Pkey instead of id like UUID4
+# class CreateProfileSerializer(BaseModelSerializer):
+#     ''' Only Staff User and Admin User can create 
+#     '''
+#     role=serializers.ChoiceField(choices=[])
+#     status=serializers.ChoiceField(choices=choices.StatusChoices)
+#     user= serializers.SlugRelatedField(slug_field='username', queryset=User.objects.none())
+#     #make sure to use another Pkey instead of id like UUID4
 
-    class Meta:
-        model=UserProfile
-        fields=[
-            'first_name','last_name', 'display_name', 'email','public_id',
-            'phone_number','date_of_birth', 'user', 'profile_picture',
-            'role', 'status',
-        ]
-        read_only_fields=['public_id']
+#     class Meta:
+#         model=UserProfile
+#         fields=[
+#             'first_name',
+#             'last_name', 'display_name', 'email','public_id',
+#             'phone_number','date_of_birth', 'user', 'profile_picture',
+#             'role', 
+#             'status',
+#         ]
+#         read_only_fields=['public_id']
     
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        user=self.context['request'].user
-        allowed_roles=[]
-        if user.is_superuser:
-            allowed_roles=[
-                (value,label)
-                for value,label in choices.RoleChoices.choices]
-        elif getattr(user, 'role', None) == 'AD':
-            allowed_roles=[
-                (value,label)
-                for value,label in choices.RoleChoices.choices if value in [choices.RoleChoices.STAFF,choices.RoleChoices.CREATOR]
-            ]
-        elif  getattr(user, 'role', None) == 'ST':
-            allowed_roles=[
-                ('CR','CREATOR')
-            ]
-        self.fields['role'].choices = allowed_roles
-        self.fields['user'].queryset=User.objects.filter(userprofile__isnull=True)
+#     def __init__(self,*args,**kwargs):
+#         super().__init__(*args,**kwargs)
+#         user=self.context['request'].user
+#         allowed_roles=[]
+#         if user.is_superuser:
+#             allowed_roles=[
+#                 (value,label)
+#                 for value,label in choices.RoleChoices.choices]
+#         elif getattr(user, 'role', None) == 'AD':
+#             allowed_roles=[
+#                 (value,label)
+#                 for value,label in choices.RoleChoices.choices if value in [choices.RoleChoices.STAFF,choices.RoleChoices.CREATOR]
+#             ]
+#         elif  getattr(user, 'role', None) == 'ST':
+#             allowed_roles=[
+#                 ('CR','CREATOR')
+#             ]
+#         self.fields['role'].choices = allowed_roles
+#         self.fields['user'].queryset=User.objects.filter(userprofile__isnull=True)
 
 
 ##################################################################################
@@ -204,7 +329,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         UserExtension.objects.create(user=user, created_by=created_by)
         return user
 
-class ResetpasswordSerializer(BaseModelSerializer):
+class ResetPasswordSerializer(BaseModelSerializer):
     password1 = serializers.CharField(
         write_only=True, required=True, style={'input_type': 'password'}
     )
@@ -218,7 +343,10 @@ class ResetpasswordSerializer(BaseModelSerializer):
     def validate(self,data):
         if validators.match_password(data['password1'],data['password2']):
             return data
-        raise serializers.ValidationError('Both password must match and cannot be empty',code='invalid')
+        raise serializers.ValidationError(detail={
+            'message':'Both password must match and cannot be empty',
+            'code':'invalid'
+        })
     
     def update(self,instance,validated_data):
         assigner=self.context['request'].user
@@ -231,6 +359,7 @@ class ResetpasswordSerializer(BaseModelSerializer):
         else:
             raise serializers.ValidationError("You cannot Reset the password for this user")
         instance.save()
+        print(instance)
         return instance
 
 class UpdatePasswordSerializer(BaseModelSerializer):
@@ -243,16 +372,38 @@ class UpdatePasswordSerializer(BaseModelSerializer):
     password2 = serializers.CharField(
     write_only=True, required=True, style={'input_type': 'password'}
     )
+    class Meta:
+        model=User
+        fields=['username','old_password','password1','password2']
+        read_only_fields=['username']
     def validate(self,data):
         if validators.match_password(data['password1'],data['password2']):
             return data
         raise serializers.ValidationError('Both password must match and cannot be empty',code='invalid')
     
     def update(self,instance, validated_data):
-        if not self.context['request.user']==instance:
-            raise serializers.ValidationError("You cannot change Password for thsi user")
+        if not self.context['request'].user==instance:
+            raise serializers.ValidationError("You cannot change Password for this user")
         if validators.check_password(instance,validated_data['old_password']):
             instance.set_password(validated_data.pop('password1'))
+            instance.save()
+            print('password updated')
             return instance
         raise serializers.ValidationError("Old Password Incorrect", code='passworderror')
-    
+
+class UserNameUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=User
+        fields=['username','id']
+        read_only_fields=['id',]
+    def validate_username(self, value):
+        validators.username_validator(value)
+        return value
+
+
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model=User
+#         fields=['username']
+#         read_only_fields=['username']    
+

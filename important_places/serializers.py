@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from userprofile.serializers import ListProfileSerializer
+from userprofile.serializers import UserProfileSerializer
 from rest_framework.reverse import reverse
 from . import models
 
@@ -10,7 +10,7 @@ class BaseSerializer(ModelSerializer):
     update_fields=[]
     create_fields=[]
     url=serializers.SerializerMethodField()
-    created_by= ListProfileSerializer()
+    created_by= UserProfileSerializer(action='list')
     def keep_fields(self,fields):
         '''
         keeps the fields that are specified in the fields argument

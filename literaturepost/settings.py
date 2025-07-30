@@ -15,6 +15,8 @@ import os
 
 from dotenv import load_dotenv
 import dj_database_url
+from datetime import timedelta
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'userprofile','rest_framework', 'literature',
     'important_places',
+    # 'rest_framework_simplejwt.token_blacklist',
 ]
 
 MIDDLEWARE = [
@@ -119,7 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',  # 👈 This enables the HTML browsable API
+        'rest_framework.renderers.BrowsableAPIRenderer',  #enables the HTML browsable API
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',
@@ -130,6 +133,14 @@ REST_FRAMEWORK = {
 	    'PAGE_SIZE': 5,  # Default number of items per page
 	    'PAGE_SIZE_QUERY_PARAM': 'page_size',  # Allow clients to override page size
 	    'MAX_PAGE_SIZE': 100  # Cap the maximum page size
+}
+SIMPLE_JWT = {
+    # "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    # "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    # 'AUTH_HEADER_TYPES': ('Bearer',),
+
+    # "ROTATE_REFRESH_TOKENS": True,         #issue new refresh token every time
+    # "BLACKLIST_AFTER_ROTATION": True,      #blacklist old refresh tokens
 }
 
 

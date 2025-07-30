@@ -19,6 +19,7 @@ def crop_compress(img,size=(300,300), max_size=2):
         Receives Image and returns Image cropped to size 
         compressed to max_size(MB) default 2MB
     '''
+    img=Image.open(img)
     target_width,target_height=size
     width,height=img.size
     left=(width-target_width)//2 if width>target_width else 0
@@ -160,7 +161,7 @@ def image_validator(value, errors=...):
         return ContentFile(buffer.getvalue(), name='file.jpg')
         
 def profile_picture_validator(value, errors=...):
-    return crop_compress(image_validator(value),size=(400,400),max_size=3)
+    return crop_compress(image_validator(value),size=(400,400),max_size=2)
 
 def check_password(user, password):
     return user.check_password(password)

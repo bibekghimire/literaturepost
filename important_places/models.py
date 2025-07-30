@@ -5,9 +5,9 @@ from functools import partial
 from utils import validators
 # Create your models here.
 
-def get_file_upload(instance,filename,file):
+def get_file_upload(instance,filename,file,folder):
     ext=os.path.splitext(filename)[1]
-    return f'temple/{instance.id}/{file}{ext}'
+    return f'media/folder/{instance.id}/{file}{ext}'
 
 class CleanValidatedModel(models.Model):
     """
@@ -24,7 +24,7 @@ class CleanValidatedModel(models.Model):
     created_at=models.DateTimeField("Created", auto_now_add=True)
     last_modified=models.DateTimeField("Last Modified", auto_now=True)
     created_by=models.ForeignKey(
-        UserProfile, related_name="%(class)s_added", on_delete=models.PROTECT, editable=False
+        UserProfile, related_name="%(class)s_added", on_delete=models.PROTECT, editable=False, null=True
     )
     
     def save(self,*args,**kwargs):
@@ -40,10 +40,9 @@ class Temple(CleanValidatedModel):
     address=models.CharField("Address", max_length=100)
     # location=models.PointField("GPS Location", required=False)#future Use
     details=models.TextField("Details")
-    image1=models.ImageField("Image 1",validators=[validators.image_validator],upload_to=partial(get_file_upload,file='image1'), blank=True, null=True)
-    image2=models.ImageField("Image 2",validators=[validators.image_validator],upload_to=partial(get_file_upload,file='image2'),blank=True, null=True)
-    image3=models.ImageField("Image 3",validators=[validators.image_validator],upload_to=partial(get_file_upload,file='image3'),blank=True, null=True)
-
+    image1=models.ImageField("Image 1",validators=[validators.image_validator],upload_to=partial(get_file_upload,file='image1',folder='temple'), blank=True, null=True)
+    image2=models.ImageField("Image 2",validators=[validators.image_validator],upload_to=partial(get_file_upload,file='image2',folder='temple'),blank=True, null=True)
+    image3=models.ImageField("Image 3",validators=[validators.image_validator],upload_to=partial(get_file_upload,file='image3',folder='temple'),blank=True, null=True)
 
     def save(self,*args,**kwargs):
         try:
