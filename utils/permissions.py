@@ -138,10 +138,14 @@ def get_object(view):
 class UserPanelPermission(SuperUserBypassPermission):
     def custom_has_permission(self,request,view):
         userprofile=get_object(view)
+        user=request.user
+        target=userprofile.user
+        print(f"{user.role} is requesting {target.role}")
         return is_Self(request.user,userprofile.user) or is_superior(request.user,userprofile.user)
     def custom_has_object_permission(self,request,view,obj):
         user=request.user
         target=obj.created_by.user
+        print(f"{user.role} is requesting {target.role}")
         return is_Self(user,target) or is_superior(user,target)
     
 class AdminPanelPermission(SuperUserBypassPermission):
