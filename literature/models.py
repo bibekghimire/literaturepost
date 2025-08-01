@@ -78,27 +78,13 @@ class Poem(Literature):
 class Gajal(Literature):
     def __str__(self):
         return f'{self.title}: {self.author}'
-    
     class Meta:
-        ordering=['last_modified']
-        permissions=[
-           ('can_edit_gajal', 'Can Edit Gajal'),
-           ('can_delete_gajal', 'Can Delete Gajal'),
-           ('can_add_gajal', 'Can Add Gajal'),
-           ('can_archieve_gajal','Can Archieve Gajal'), 
-        ]
+        abstract=False
 
 class Story(Literature):
     def __str__(self):
         return f'{self.title}: {self.author}'
     class Meta:
-        ordering=['last_modified']
-        permissions=[
-            ('can_edit_story', 'Can Edit Story'),
-            ('can_delete_story', 'Can Delete Story'),
-            ('can_add_story', 'Can Add Story'),
-            ('can_archieve_story','Can Archieve Story'),
-        ]
-
+        abstract=False
 
     
