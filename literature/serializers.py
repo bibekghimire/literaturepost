@@ -56,7 +56,17 @@ class BaseSerializer(serializers.ModelSerializer):
         
     def create(self,validated_data):
         validated_data['created_by']=self.context['request'].user.userprofile
-        return super().create(validated_data)  
+        instance=self.Meta.model(**validated_data)
+        instance._validated=True
+        instance.save()
+        return instance
+
+    def update(self,instance,validated_data):
+        instance._validated=True
+        for attr,value in validated_data.items():
+            setattr(instance,attr,value)
+        instance.save()
+        return instance
     
     def get_url(self,obj):
         request=self.context.get('request', None)
@@ -77,7 +87,7 @@ class BaseSerializer(serializers.ModelSerializer):
 class ChhandaSerializer(BaseSerializer):
     list_fields=['title','url','id']
     create_fields=['title','character_count','details','publish_status']
-    detail_fields=['title','character_count','details','created_at','last_modified','created_by']
+    detail_fields=['title','character_count','details','created_at','last_modified','created_by','publish_status']
     update_fields=create_fields
     serialize_fields=['title','url']
     class Meta:
@@ -113,7 +123,7 @@ class StorySerializer(BaseSerializer):
     update_fields=create_fields
     
     class Meta:
-        model=Poem
+        model=Story
         fields='__all__'
 class GajalSerializer(BaseSerializer):
     list_fields=['id','title','created_by','publish_status']
@@ -122,6 +132,6 @@ class GajalSerializer(BaseSerializer):
     update_fields=create_fields
     
     class Meta:
-        model=Poem
+        model=Gajal
         fields='__all__'  
 
