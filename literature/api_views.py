@@ -37,13 +37,13 @@ class LiteratureListCreateViews(
     permission_classes=[permissions.CanManageContent]
     lookup_field='id'
     pagination_class=CustomPaginator
-    _access='public'
     # lookup_url_kwarg='id'
     # paginator=PageNumberPagination()
     def get_serializer_class(self):
         #handle Key Error
         self.action = 'create' if self.request.method == 'POST' else 'list'
         serializer=serializer_model_map['serializer'][self.kwargs['type']]
+        print(serializer)
         return serializer
     # def filter_queryset(self, queryset):
     #     return super().filter_queryset(queryset)
