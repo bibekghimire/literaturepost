@@ -4,7 +4,7 @@ from userprofile import serializers
 import datetime
 from django.contrib.auth.models import User
 from userprofile.models import UserProfile
-from userprofile import choices
+from utils import choices
 from rest_framework.exceptions import ValidationError
 
 

@@ -100,6 +100,8 @@ class CanManageUserProfile(SuperUserBypassPermission):
         else:
             return False
     def custom_has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return request.method=='GET'
         role=getattr(request.user,'role',None)
         if not role:
             return False

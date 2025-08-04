@@ -73,7 +73,9 @@ class ProfileDetailView(GenericAPIView, mixins.RetrieveModelMixin):
         but authenticated user can see more details down on the hierarchy'''
         self.action='public-retrieve'
         obj=self.get_object()
-        if permissions.is_superior(self.request.user,obj.user):
+        user=self.request.user
+        target=obj.user
+        if permissions.is_Self(user,target) or permissions.is_superior(user, target):
             self.action='retrieve'
         return _serializers.UserProfileSerializer
     def get_queryset(self):
@@ -89,9 +91,12 @@ class ProfileUpdateDeleteView(GenericAPIView, mixins.UpdateModelMixin, mixins.De
     def get_serializer_class(self):
         self.action='update'
         obj=self.get_object()
-        if permissions.is_superior(request.user,obj.user):
+        if permissions.is_superior(self.request.user,obj.user):
             self.action='super-update'
         return _serializers.UserProfileSerializer
+    def get_queryset(self):
+        qs=UserProfile.objects.all()
+        return filter_query_set(self,qs)
     def put(self,request,*args,**kwargs):
         return self.update(request,*args,**kwargs)
     def patch(self,request,*args,**kwargs):

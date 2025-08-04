@@ -91,7 +91,7 @@ class BaseModelSerializer(serializers.ModelSerializer):
         return instance
     
     def update(self,instance,validated_data):
-        assign_user=getattr(validated_data,'assign_user')
+        assign_user=getattr(validated_data,'assign_user',None)
         if assign_user:
             validated_data['user']=assign_user
         validated_data['modified_by']=self.context['request'].user

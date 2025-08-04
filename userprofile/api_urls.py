@@ -10,7 +10,7 @@ urlpatterns=[
          api_view.ProfileDetailView.as_view(),
          name='profile-detail'),
     path('add_profile/',api_view.ProfileCreateView.as_view(),name='create-profile'),
-    path('update-profile/',api_view.ProfileUpdateDeleteView.as_view(),name='delete-update'),
+    path('update-profile/<uuid:uuid>/',api_view.ProfileUpdateDeleteView.as_view(),name='delete-update'),
     path('add-user/',api_view.UserCreateView.as_view(),name='create-user'),
     path('listusers/',api_view.UserListView.as_view(),name='user-list'),
     path('updateusername/<uuid:uuid>/',api_view.UserNameUpdateView.as_view(), name='username-update'),
