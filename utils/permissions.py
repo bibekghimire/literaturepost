@@ -32,17 +32,7 @@ def isStaff(user):
 def isCreator(user):
     return user.role and user.role==CREATOR
 
-def superiorPermission(user, target):
-    if not target.role:
-        return user.role!=CREATOR
-    if not user.is_authenticated:
-        return False
-    if user.is_superuser:
-        return True
-    if isAdmin(user):
-        return isStaff(target) or isCreator(target)
-    elif isStaff(user):
-        return isCreator(target)
+
 
 class SuperUserBypassPermission(BasePermission):
     def has_permission(self, request, view):
@@ -67,7 +57,7 @@ class CanCreateResetUser(SuperUserBypassPermission):
     def custom_has_object_permission(self,request,view,obj):
         user=request.user
         target_user=obj
-        return superiorPermission(user,target_user)
+        return is_superior(user,target_user)
 
 class CanUpdateUserName(SuperUserBypassPermission):
     '''Only self, and superior can change username'''
@@ -79,7 +69,7 @@ class CanUpdateUserName(SuperUserBypassPermission):
         if user==target_user:
             return True
         else:
-            return superiorPermission(user,target_user)
+            return is_superior(user,target_user)
 
 class CanChangePassword(BasePermission):
     def has_permission(self, request, view):
