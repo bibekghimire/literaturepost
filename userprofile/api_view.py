@@ -38,34 +38,42 @@ def filter_query_set(self,qs):
 
 # general/publicfor listing users with some read_only fields and retrieve 
 class ProfileCreateView(GenericAPIView, mixins.CreateModelMixin):
+    '''
+    Users that can crete the UserProfiles are ADMIN and STAFF
+    '''
     permission_classes=[IsAuthenticated,permissions.CanCreateUserProfile]
     def get_serializer_class(self):
         self.action='create'
         return _serializers.UserProfileSerializer
     def post(self,request,*args,**kwargs):
-        if request.user.is_superuser:
-            return self.create(request,*args,**kwargs)
-        if request.user.role in ['AD','ST']:
-            return self.create(request,*args,**kwargs)
-        return Response({'Details:':"You are not allowed to do this"}, status=status.HTTP_403_FORBIDDEN)
-
+        return self.create(request,*args,**kwargs)
+        
 class ProfileListView(GenericAPIView, mixins.ListModelMixin):
     def get_serializer_class(self):
         self.action='list'
         return _serializers.UserProfileSerializer
     def get_queryset(self):
+        '''Users can see the userprofile list in the hierarchy down to them
+        ADMIN>STAFF>CREATOR, non authenticated can view Creators profile only
+        '''
         qs=UserProfile.objects.all()
         return filter_query_set(self,qs)
     def get(self,request,*args,**kwargs):
         return self.list(request,*args,**kwargs)
 
 class ProfileDetailView(GenericAPIView, mixins.RetrieveModelMixin):
+    '''Users can see the userprofile details in the hierarchy down to them
+        ADMIN>STAFF>CREATOR, non authenticated can view Creators profile only
+        '''
     lookup_field='public_id'
     lookup_url_kwarg='uuid'
     def get_serializer_class(self):
+        '''
+        non authenticated users can only see the limited details about a Creator
+        but authenticated user can see more details down on the hierarchy'''
         self.action='public-retrieve'
         obj=self.get_object()
-        if permissions.superiorPermission(self.request.user,obj.user):
+        if permissions.is_superior(self.request.user,obj.user):
             self.action='retrieve'
         return _serializers.UserProfileSerializer
     def get_queryset(self):
@@ -81,7 +89,7 @@ class ProfileUpdateDeleteView(GenericAPIView, mixins.UpdateModelMixin, mixins.De
     def get_serializer_class(self):
         self.action='update'
         obj=self.get_object()
-        if permissions.superiorPermission(request.user,obj.user):
+        if permissions.is_superior(request.user,obj.user):
             self.action='super-update'
         return _serializers.UserProfileSerializer
     def put(self,request,*args,**kwargs):
@@ -96,90 +104,6 @@ class ProfileUpdateDeleteView(GenericAPIView, mixins.UpdateModelMixin, mixins.De
             return self.destroy(request,*args,**kwargs)
         return Response("You cannnot Perform the deletion",status=status.HTTP_403_FORBIDDEN)
 
-# #for updating self_profile and view details of self profile 
-# class ProfileCreateView(GenericAPIView, mixins.CreateModelMixin):
-#     permission_classes=[IsAuthenticated, permissions.CanCreateManageUserProfile]
-#     serializer_class=_serializers.UserProfileSerializer
-
-#     def post(self,request,*args,**kwargs):
-#         print('POST OPERATION')
-#         self.action='create'
-#         if request.user.is_superuser:
-#             return self.create(request,*args,**kwargs)
-#         if request.user.role in ['AD','ST']:
-#             return self.create(request,*args,**kwargs)
-#         return Response({'Details:':"You are not allowed to do this"}, status=status.HTTP_403_FORBIDDEN)
-
-# class ProfileUpdateDeleteView(
-#     GenericAPIView, mixins.RetrieveModelMixin,mixins.UpdateModelMixin, 
-#     mixins.CreateModelMixin
-# ):
-#     '''
-#     update only
-#     To update self profile and update another profiles on lower hierarchy
-#     '''
-#     permission_classes=[IsAuthenticated, permissions.CanCreateManageUserProfile]
-#     lookup_field='public_id'
-#     lookup_url_kwarg='uuid'
-#     serializer_class=_serializers.UserProfileSerializer
-#     # def get_queryset(self):
-#     #     qs=UserProfile.objects.all()
-#     #     return filter_query_set(self,qs)
-
-#     def get_object(self):
-#         qs=UserProfile.objects.all()
-#         uuid=self.kwargs['uuid']
-#         # if not 'uuid' in self.kwargs:
-#         #     uuid=self.request.user.userprofile.public_id
-#         # else:
-#         #     uuid=self.kwargs['uuid']
-#         obj=get_object_or_404(qs,public_id=uuid)
-#         self.check_object_permissions(self.request, obj)
-#         return obj
-    
-#     # def get_serializer_class(self, *args, **kwargs):
-#     #     instance=self.get_object()
-#     #     kwargs['context'] = self.get_serializer_context()
-#     #     if isinstance(instance, UserProfile):
-#     #         if instance.user==self.request.user:
-#     #             return _serializers.SelfUserProfileSerializer
-#     #         return _serializers.SuperUserProfileSerialzier
-#     #     return Response({},status=400)
-      
-    
-#     def put(self,request,*args,**kwargs):
-#         obj=self.get_object()
-#         user=request.user
-#         target=obj.user
-#         if permissions.is_self(user,target):
-#             self.action='update'
-#         elif permissions.is_superior(user,target):
-#                 self.action='super-update'
-#         return self.update(request,*args,**kwargs)
-#     def patch(self,request,*args,**kwargs):
-#         obj=self.get_object()
-#         user=request.user
-#         target=obj.user
-#         if permissions.is_self(user,target):
-#             self.action='update'
-#         elif permissions.is_superior(user,target):
-#                 self.action='super-update'
-#         return self.partial_update(request,*args,**kwargs)
-#     def delete(self,request,*args,**kwargs):
-#         return self.destroy(request,*args,**kwargs)
-# # #to create a USerProfile
-# # class ProfileCreateView(
-# #     GenericAPIView, mixins.CreateModelMixin, mixins.ListModelMixin
-# # ):
-# #     serializer_class=_serializers.SuperUserProfileSerialzier
-# #     permission_classes=[IsAuthenticated,]
-# #     def post(self,request,*args,**kwargs):
-# #         if request.user.is_superuser:
-# #             return self.create(request,*args,**kwargs)
-# #         if request.user.role =='CR':
-# #             return Response({'Details:':"You are not allowed to do this"}, status=status.HTTP_403_FORBIDDEN)
-# #         return self.create(request,*args,**kwargs)
- 
 #create django.contrib.auth.models.User Object
 class UserCreateView(
     GenericAPIView, mixins.CreateModelMixin
@@ -188,7 +112,6 @@ class UserCreateView(
     permission_classes=[IsAuthenticated,permissions.CanCreateResetUser]
     
     def post(self,request,*args,**kwargs):
-
         if self.request.user.role=='CR':
             return Response({'Details:':f"You ({self.request.user.role}) are not allowed to create any user"}, status=status.HTTP_403_FORBIDDEN)
         return self.create(request,*args,**kwargs)
@@ -215,22 +138,24 @@ class UserNameUpdateView(
         return user_object.user
     def put(self, request, *args, **kwargs):
         return self.update(request,*args,**kwargs)
+    
     def get(self,request,*args,**kwargs):
         return self.retrieve(request,*args,**kwargs)
 
 class ResetPasswordView(
     GenericAPIView, mixins.UpdateModelMixin
 ):
+    '''only the superior user can reset the password for others
+    in hierarchy ADMIN>STAFF>CREATOR
+    '''
     permission_classes=[IsAuthenticated, permissions.CanCreateResetUser]
     serializer_class=_serializers.ResetPasswordSerializer
-    # lookup_url_kwarg='uuid'
-    # lookup_field='public_id'
-    # queryset=UserProfile.objects.all()
     def get_object(self):
+        '''returns the target user to reset the password for'''
         profiles=UserProfile.objects.all()
         profile_object=get_object_or_404(profiles, public_id=self.kwargs['uuid'])
         user_object=profile_object.user
-        self.check_object_permissions(self.request,user_object)
+        self.check_object_permissions(self.request,user_object) #checking permission for the atarget user
         return user_object
     def put(self, request,*args, **kwargs):
         return self.update(request,*args,**kwargs)
