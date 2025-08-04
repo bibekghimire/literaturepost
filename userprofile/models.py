@@ -5,7 +5,7 @@ import os
 from PIL import Image
 from django.core.exceptions import ValidationError
 
-from ..utils import choices
+from utils import choices
 from utils import validators
 import uuid
 

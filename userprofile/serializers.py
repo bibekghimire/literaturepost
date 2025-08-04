@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import UserProfile, UserExtension
 from django.contrib.auth.models import User
 from . import validators
-from ..utils import choices
+from utils import choices
 from rest_framework.reverse import reverse
 
 
