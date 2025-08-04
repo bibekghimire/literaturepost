@@ -3,26 +3,38 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import SAFE_METHODS
 from django.shortcuts import get_object_or_404
 from userprofile.models import UserProfile
+from utils import choices
+
+ADMIN=choices.RoleChoices.ADMIN
+STAFF=choices.RoleChoices.STAFF
+CREATOR=choices.RoleChoices.CREATOR
 
 def is_Self(user, target):
     return user==target
 
 def is_superior(user,target):
-    if user.role=='AD':
-        return target.role != 'AD'
-    elif user.role=='ST':
-        return target.role=='CR'
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    if user.role==ADMIN:
+        return target.role != ADMIN
+    elif user.role==STAFF:
+        return target.role==CREATOR
     return False
+
 def isAdmin(user):
-    return user.role and user.role=='AD'
+    return user.role and user.role==ADMIN
+
 def isStaff(user):
-    return user.role and user.role=='ST'
+    return user.role and user.role==STAFF
+
 def isCreator(user):
-    return user.role and user.role=='CR'
+    return user.role and user.role==CREATOR
 
 def superiorPermission(user, target):
     if not target.role:
-        return user.role!='CR'
+        return user.role!=CREATOR
     if not user.is_authenticated:
         return False
     if user.is_superuser:
@@ -45,12 +57,12 @@ class SuperUserBypassPermission(BasePermission):
             return self.custom_has_object_permission(request, view, obj)
 
 class CanCreateResetUser(SuperUserBypassPermission):
-    '''Only Admins and staffs can create user
-    users Other than staff and admin cannot do create user
+    '''Only Admins and staffs can create a user
+    users Other than staff and admin cannot do create_user
     '''
     def custom_has_permission(self, request, view):
-        role=getattr(request.user,'role')
-        if role and role in ['AD','ST']:
+        role=getattr(request.user,'role', None)
+        if role and role in [ADMIN, STAFF]:
             return True
     def custom_has_object_permission(self,request,view,obj):
         user=request.user
@@ -75,6 +87,7 @@ class CanChangePassword(BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user==obj
 
+#USER PROFILE
 class CanManageUserProfile(SuperUserBypassPermission):
     """
     - Admins can manage STAFF and CREATORS, but not other ADMINS.
@@ -88,25 +101,27 @@ class CanManageUserProfile(SuperUserBypassPermission):
             return False
         if request.user==obj.user:
             return True
-        if current_role=='AD':
+        if current_role==ADMIN:
             "Admin can update other than Admin's Profile"
-            return target_role != 'AD'
-        elif current_role=='ST':
+            return target_role != ADMIN
+        elif current_role==STAFF:
             "Staff can update Creators Profile"
-            return target_role == 'CR'
+            return target_role == CREATOR
         else:
             return False
     def custom_has_permission(self, request, view):
         role=getattr(request.user,'role',None)
         if not role:
             return False
-        return request.user.role in ['AD','ST','CR']
+        return request.user.role in [ADMIN,STAFF,CREATOR]
         
 class CanCreateUserProfile(SuperUserBypassPermission):
+    'Only Admin and Staff user create a userprofile'
+    'and assign a user to it'
     def custom_has_permission(self, request, view):
         role=getattr(request.user,'role',None)
         if role:
-            return role in ['AD','ST']
+            return role in [ADMIN,STAFF]
     def custom_has_object_permission(self,request,view,obj):
         user=request.user
         target=obj.user
@@ -151,7 +166,7 @@ class UserPanelPermission(SuperUserBypassPermission):
 class AdminPanelPermission(SuperUserBypassPermission):
     def custom_has_permission(self,request,view):
         user=request.user
-        if user.role=='AD':
+        if user.role==ADMIN:
             return True
     def custom_has_obj_permission(self,request,view,obj):
         user=request.user
