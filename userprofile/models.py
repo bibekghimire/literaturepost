@@ -5,7 +5,7 @@ import os
 from PIL import Image
 from django.core.exceptions import ValidationError
 
-from . import choices
+from ..utils import choices
 from utils import validators
 import uuid
 
@@ -14,10 +14,6 @@ def user_directory_path(instance, filename):
     ext=os.path.splitext(filename)[1] 
     return f'user_{instance.user.id}_{instance.first_name}/profile{ext}'
 
-# def validators.no_whitespace(value):
-#     if not value or not value.strip():
-#         raise ValidationError('Empy or none value', code='blank')   
-#     return value
 '''
 The role is defined here in UserProfile, accessing role associated to UserProfile
 that has foriegn key to Django.contrib.auth.models.User is a bit lengthy
