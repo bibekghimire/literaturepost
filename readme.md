@@ -2,26 +2,15 @@
 
 This project `literaturepost' is a Django-based web application for publishing Literature posts. CRUD for Poem, Gajal, Story. 
 
-For User management only the register user with privileges can create other users. 
-
-## features
-- REST API with django_rest_framework
-- User registration (from authnticated user only)
-- Customized User Roles
-- Customized User Dashboard Support
-- CRUD operations for Poem, Gajal, Stroy
-
-## tech stack
-- **Backend:** Django, Django REST Framework
-- **Database:** PostgreSQL/SqLite
-
+For User management only the register user with privileges can create other users.
 ## Getting Started
 ### clone the repo
 ```bash
 git clone https://github.com/bibekghimire/literaturepost.git
 cd literaturepost
 ```
-### create and activate virtual environment
+
+## Create and Activate Virtual Environment
 ```bash
 python -m venv venv
 #windows
@@ -35,12 +24,14 @@ pip install -r requirements.txt
 ```
 ### Set up environment variables
 ```bash
-ENGINE=django.db.backends.postgresql
-DB_NAME= your_db_name
-DB_USER=your_db_user
-DB_PASSWORD=db_password
-DB_HOST=Your_host
-DB_PORT=your_port
+
+ENGINE -> database Engine: django.db.backends.postgresql
+DB_NAME : Database Name
+DB_USER: User account
+DB_PASSWORD: password for database user
+DB_HOST: host address database is running
+DB_PORT: port at which database is listening
+SECRET_KEY
 ```
 ### Run migrations
 ```bash
@@ -50,3 +41,27 @@ python manage.py migrate
 ```bash
 python manage.py runserver
 ```
+
+
+## Running Test
+python manage.py test
+
+## API Endpoints
+### Authentication Endpoints (JWT-based)
+- `POST /api/login/` — Get access & refresh tokens  
+- `POST /api/token/refresh/` — Refresh access token  
+- `POST /api/token/verify/` — Verify token validity
+- `POST /api/logout/` - Logout 
+
+
+## features
+- REST API with django_rest_framework
+- User registration (from authentecateduser only)
+- Customized User Roles
+- Customized User Dashboard Support
+- CRUD operations for Poem, Gajal, Story
+
+## tech stack
+- **Backend:** Django, Django REST Framework
+- **Database:** PostgreSQL/SqLite
+
