@@ -58,3 +58,6 @@ coverage.xml
 *.docx
 miscs.*
 test_scripts/
+templates/
+
+.gitignore
