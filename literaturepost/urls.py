@@ -19,13 +19,15 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import (
     TokenObtainPairView, TokenRefreshView, TokenVerifyView
 )
-
+from .views import LogoutView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/',TokenVerifyView.as_view(), name='token_verify'),
+    path('api/logout/', LogoutView.as_view(), name='logout'),
+
     path('', include('literature.urls')),
     path('api/profiles/', include('userprofile.api_urls')),
     path('api/literature/',include('literature.api_urls')),
