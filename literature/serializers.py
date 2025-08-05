@@ -117,7 +117,7 @@ class PoemSerializer(BaseSerializer):
     #     data['chhanda_info']=ChhandaSerializer(instance.chhanda,action='serialize')
     #     return data
 class StorySerializer(BaseSerializer):
-    list_fields=['id','title','created_by','publish_status']
+    list_fields=['id','title','created_by','publish_status', 'url']
     create_fields=['title','content','contributors','publish_status',]
     detail_fields=list(set(create_fields+list_fields))+['created_at','last_modified']
     update_fields=create_fields
@@ -126,9 +126,9 @@ class StorySerializer(BaseSerializer):
         model=Story
         fields='__all__'
 class GajalSerializer(BaseSerializer):
-    list_fields=['id','title','created_by','publish_status']
+    list_fields=['id','title','created_by','publish_status', 'url']
     create_fields=['title','content','contributors','publish_status',]
-    detail_fields=list(set(create_fields+list_fields))+['created_at','last_modified']
+    detail_fields=['id','title','created_by','publish_status','created_at','last_modified', 'content', 'contributors']
     update_fields=create_fields
     
     class Meta:
