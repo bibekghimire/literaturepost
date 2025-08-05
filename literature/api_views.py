@@ -104,7 +104,6 @@ class UserLiteratureListView(GenericAPIView,mixins.ListModelMixin):
         serializer=serializer_model_map['serializer'][self.kwargs['type']]
         return serializer
     def get_queryset(self):
-        
         #handle Key Error
         try:
             userprofile=get_object_or_404(UserProfile.objects.all(),public_id=self.kwargs['uuid'])
@@ -168,14 +167,4 @@ class AdminLiteratureListView(GenericAPIView, mixins.ListModelMixin):
         except KeyError:
             return Response("Bad Request",status=status.HTTP_400_BAD_REQUEST)
     def get(self,request,*args,**kwargs):
-        # user=request.user
-        # if user.is_superuser or user.role=='AD':
         return self.list(request,*args,**kwargs)
-        # else:
-        #     return Response("You are not allowed to view this",status=status.HTTP_403_FORBIDDEN)
-
-# class AdminLiteratureDetailUpdateDeleteView(
-#     GenericAPIView, mixins.RetrieveModelMixin, mixins.UpdateModelMixin,
-#     mixins.DestroyModelMixin
-# ):
-#     permission_classes=6
