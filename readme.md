@@ -4,7 +4,7 @@ This project `literaturepost' is a Django-based web application for publishing L
 
 For User management only the register user with privileges can create other users.
 
-📚 Full documentation → [docs/index.md](docs/index.md)
+📚 Full documentation → [INDEX](literaturepost/docs/index.md)
 
 
 ## features
